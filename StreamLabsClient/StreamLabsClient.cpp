@@ -5,19 +5,77 @@
 
 #include <iostream>
 
+using namespace std;
+
 #define BUFSIZE 512
+
+int sendMessageToServer(HANDLE hPipe, LPCTSTR lpvMessage) {
+	DWORD cbToWrite, cbWritten, cbRead;
+	BOOL fSuccess = FALSE;
+	TCHAR  chBuf[BUFSIZE];
+
+	cbToWrite = (lstrlen(lpvMessage) + 1) * sizeof(TCHAR);
+	_tprintf(TEXT("Sending %d byte message: \"%s\"\n"), cbToWrite, lpvMessage);
+
+	fSuccess = WriteFile(
+		hPipe,                  // pipe handle 
+		lpvMessage,             // message 
+		cbToWrite,              // message length 
+		&cbWritten,             // bytes written 
+		NULL);                  // not overlapped 
+
+	if (!fSuccess)
+	{
+		_tprintf(TEXT("WriteFile to pipe failed. GLE=%d\n"), GetLastError());
+		return -1;
+	}
+
+	printf("\nMessage sent to server, receiving reply as follows:\n");
+
+	do
+	{
+		// Read from the pipe.
+		fSuccess = ReadFile(
+			hPipe,    // pipe handle 
+			chBuf,    // buffer to receive reply 
+			BUFSIZE * sizeof(TCHAR),  // size of buffer 
+			&cbRead,  // number of bytes read 
+			NULL);    // not overlapped 
+
+		if (!fSuccess && GetLastError() != ERROR_MORE_DATA)
+			break;
+
+		_tprintf(TEXT("\"%s\"\n"), chBuf);
+	} while (!fSuccess);  // repeat loop if ERROR_MORE_DATA 
+
+	if (!fSuccess)
+	{
+		_tprintf(TEXT("ReadFile from pipe failed. GLE=%d\n"), GetLastError());
+		return -1;
+	}
+}
 
 int _tmain(int argc, TCHAR * argv[])
 {
 	HANDLE hPipe;
-	LPCTSTR lpvMessage = TEXT("Default message from client.");
-	TCHAR  chBuf[BUFSIZE];
 	BOOL   fSuccess = FALSE;
-	DWORD  cbRead, cbToWrite, cbWritten, dwMode;
+	DWORD  dwMode;
 	LPCTSTR lpszPipename = TEXT("\\\\.\\pipe\\mynamedpipe");
 
-	if (argc > 1)
-		lpvMessage = argv[1];
+	int mode;
+	cout << "Please select the server mode from below:" << endl;
+	cout << "1. Synchornous" << endl;
+	cout << "2. Asynchronous" << endl;
+	cin >> mode;
+	if (mode != 1 && mode != 2) {
+		cout << "Invalid mode selected" << endl;
+		exit(0);
+	}
+
+	if (mode != 1) {
+		cout << "Asunchronous not implemented yet" << endl;
+		exit(0);
+	}
 
 	// Try to open a named pipe; wait for it, if necessary. 
 
@@ -55,9 +113,6 @@ int _tmain(int argc, TCHAR * argv[])
 		}
 	}
 
-	std::cout << "Connected to the server." << std::endl;
-
-
 	// The pipe connected; change to message-read mode. 
 
 	dwMode = PIPE_READMODE_MESSAGE;
@@ -72,50 +127,29 @@ int _tmain(int argc, TCHAR * argv[])
 		return -1;
 	}
 
-	// Send a message to the pipe server. 
 
-	cbToWrite = (lstrlen(lpvMessage) + 1) * sizeof(TCHAR);
-	_tprintf(TEXT("Sending %d byte message: \"%s\"\n"), cbToWrite, lpvMessage);
+	cout << "Connected to the server." << endl;
 
-	fSuccess = WriteFile(
-		hPipe,                  // pipe handle 
-		lpvMessage,             // message 
-		cbToWrite,              // message length 
-		&cbWritten,             // bytes written 
-		NULL);                  // not overlapped 
+	while (true) {
+		// Send a message to the pipe server.
+		int msgType = -1;
+		cout << "Please select the type of message to send or 0 to exit:" << endl;
+		cout << "0: Exit" << endl;
+		cout << "1: Send string/number" << endl;
+		cout << "2: Register a custom class" << endl;
+		cout << "3: Create an object" << endl;
+		cout << "4: Print all objects of a class" << endl;
+		cin >> msgType;
+		if (msgType < 0 || msgType > 4) {
+			cout << "Invalid msg type. Please select correct message type\n\n";
+			continue;
+		}
 
-	if (!fSuccess)
-	{
-		_tprintf(TEXT("WriteFile to pipe failed. GLE=%d\n"), GetLastError());
-		return -1;
+		if (sendMessageToServer(hPipe, L"derp") == -1) {
+			return -1;
+		}
 	}
 
-	printf("\nMessage sent to server, receiving reply as follows:\n");
-
-	do
-	{
-		// Read from the pipe. 
-
-		fSuccess = ReadFile(
-			hPipe,    // pipe handle 
-			chBuf,    // buffer to receive reply 
-			BUFSIZE * sizeof(TCHAR),  // size of buffer 
-			&cbRead,  // number of bytes read 
-			NULL);    // not overlapped 
-
-		if (!fSuccess && GetLastError() != ERROR_MORE_DATA)
-			break;
-
-		_tprintf(TEXT("\"%s\"\n"), chBuf);
-	} while (!fSuccess);  // repeat loop if ERROR_MORE_DATA 
-
-	if (!fSuccess)
-	{
-		_tprintf(TEXT("ReadFile from pipe failed. GLE=%d\n"), GetLastError());
-		return -1;
-	}
-
-	printf("\n<End of message, press ENTER to terminate connection and exit>");
 	_getch();
 
 	CloseHandle(hPipe);
