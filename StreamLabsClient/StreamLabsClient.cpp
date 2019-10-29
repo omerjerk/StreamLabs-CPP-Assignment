@@ -9,6 +9,59 @@ using namespace std;
 
 #define BUFSIZE 512
 
+int connectToServer(LPCTSTR lpszPipename, HANDLE &hPipe) {
+	BOOL   fSuccess = FALSE;
+	DWORD  dwMode;
+	// Try to open a named pipe; wait for it, if necessary. 
+	while (1)
+	{
+		hPipe = CreateFile(
+			lpszPipename,   // pipe name 
+			GENERIC_READ |  // read and write access 
+			GENERIC_WRITE,
+			0,              // no sharing 
+			NULL,           // default security attributes
+			OPEN_EXISTING,  // opens existing pipe 
+			0,              // default attributes 
+			NULL);          // no template file 
+
+	  // Break if the pipe handle is valid. 
+
+		if (hPipe != INVALID_HANDLE_VALUE)
+			break;
+
+		// Exit if an error other than ERROR_PIPE_BUSY occurs. 
+
+		if (GetLastError() != ERROR_PIPE_BUSY)
+		{
+			_tprintf(TEXT("Could not open pipe. GLE=%d\n"), GetLastError());
+			return -1;
+		}
+
+		// All pipe instances are busy, so wait for 20 seconds. 
+
+		if (!WaitNamedPipe(lpszPipename, 20000))
+		{
+			printf("Could not open pipe: 20 second wait timed out.");
+			return -1;
+		}
+	}
+
+	// The pipe connected; change to message-read mode. 
+
+	dwMode = PIPE_READMODE_MESSAGE;
+	fSuccess = SetNamedPipeHandleState(
+		hPipe,    // pipe handle 
+		&dwMode,  // new pipe mode 
+		NULL,     // don't set maximum bytes 
+		NULL);    // don't set maximum time 
+	if (!fSuccess)
+	{
+		_tprintf(TEXT("SetNamedPipeHandleState failed. GLE=%d\n"), GetLastError());
+		return -1;
+	}
+}
+
 int sendMessageToServer(HANDLE hPipe, LPCTSTR lpvMessage) {
 	DWORD cbToWrite, cbWritten, cbRead;
 	BOOL fSuccess = FALSE;
@@ -58,8 +111,6 @@ int sendMessageToServer(HANDLE hPipe, LPCTSTR lpvMessage) {
 int _tmain(int argc, TCHAR * argv[])
 {
 	HANDLE hPipe;
-	BOOL   fSuccess = FALSE;
-	DWORD  dwMode;
 	LPCTSTR lpszPipename = TEXT("\\\\.\\pipe\\mynamedpipe");
 
 	int mode;
@@ -77,56 +128,7 @@ int _tmain(int argc, TCHAR * argv[])
 		exit(0);
 	}
 
-	// Try to open a named pipe; wait for it, if necessary. 
-
-	while (1)
-	{
-		hPipe = CreateFile(
-			lpszPipename,   // pipe name 
-			GENERIC_READ |  // read and write access 
-			GENERIC_WRITE,
-			0,              // no sharing 
-			NULL,           // default security attributes
-			OPEN_EXISTING,  // opens existing pipe 
-			0,              // default attributes 
-			NULL);          // no template file 
-
-	  // Break if the pipe handle is valid. 
-
-		if (hPipe != INVALID_HANDLE_VALUE)
-			break;
-
-		// Exit if an error other than ERROR_PIPE_BUSY occurs. 
-
-		if (GetLastError() != ERROR_PIPE_BUSY)
-		{
-			_tprintf(TEXT("Could not open pipe. GLE=%d\n"), GetLastError());
-			return -1;
-		}
-
-		// All pipe instances are busy, so wait for 20 seconds. 
-
-		if (!WaitNamedPipe(lpszPipename, 20000))
-		{
-			printf("Could not open pipe: 20 second wait timed out.");
-			return -1;
-		}
-	}
-
-	// The pipe connected; change to message-read mode. 
-
-	dwMode = PIPE_READMODE_MESSAGE;
-	fSuccess = SetNamedPipeHandleState(
-		hPipe,    // pipe handle 
-		&dwMode,  // new pipe mode 
-		NULL,     // don't set maximum bytes 
-		NULL);    // don't set maximum time 
-	if (!fSuccess)
-	{
-		_tprintf(TEXT("SetNamedPipeHandleState failed. GLE=%d\n"), GetLastError());
-		return -1;
-	}
-
+	connectToServer(lpszPipename, hPipe);
 
 	cout << "Connected to the server." << endl;
 
