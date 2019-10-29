@@ -1,9 +1,11 @@
-#include <windows.h> 
+#include <windows.h>
 #include <stdio.h>
 #include <conio.h>
 #include <tchar.h>
 
 #include <iostream>
+
+#include "Messages.h"
 
 using namespace std;
 
@@ -147,9 +149,22 @@ int _tmain(int argc, TCHAR * argv[])
 			continue;
 		}
 
-		if (sendMessageToServer(hPipe, L"derp") == -1) {
+		LPCTSTR msg;
+
+		switch (msgType) {
+		case 0:
+			return 0;
+		case 1:
+			wstring str;
+			cout << "Enter number/string to send to the server" << endl;
+			wcin >> str;
+			msg = Messages::getStringMessage(str);
+		}
+
+		if (sendMessageToServer(hPipe, msg) == -1) {
 			return -1;
 		}
+
 	}
 
 	_getch();
