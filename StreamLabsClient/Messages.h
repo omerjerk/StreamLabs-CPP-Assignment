@@ -9,6 +9,6 @@ using namespace std;
 class Messages
 {
 public:
-	static LPCTSTR getStringMessage(wstring str);
+	static wstring getStringMessage(wstring str);
 };
 

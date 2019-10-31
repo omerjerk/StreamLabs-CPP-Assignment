@@ -1,8 +1,9 @@
 #include "Messages.h"
 
-#include "windows.h"
+#include <string>
 
-LPCTSTR Messages::getStringMessage(wstring str) {
-	wstring res = L"str " + str;
-	return res.c_str();
+using namespace std;
+
+wstring Messages::getStringMessage(wstring str) {
+	return (L"str " + str).c_str();
 }

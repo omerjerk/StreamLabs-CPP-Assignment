@@ -70,7 +70,7 @@ int sendMessageToServer(HANDLE hPipe, LPCTSTR lpvMessage) {
 	TCHAR  chBuf[BUFSIZE];
 
 	cbToWrite = (lstrlen(lpvMessage) + 1) * sizeof(TCHAR);
-	_tprintf(TEXT("Sending %d byte message: \"%s\"\n"), cbToWrite, lpvMessage);
+	_tprintf(TEXT("Sending %d byte message\n"), cbToWrite);
 
 	fSuccess = WriteFile(
 		hPipe,                  // pipe handle 
@@ -149,19 +149,25 @@ int _tmain(int argc, TCHAR * argv[])
 			continue;
 		}
 
-		LPCTSTR msg;
+		wstring msg;
 
 		switch (msgType) {
 		case 0:
 			return 0;
-		case 1:
+		case 1: {
 			wstring str;
 			cout << "Enter number/string to send to the server" << endl;
 			wcin >> str;
 			msg = Messages::getStringMessage(str);
+			wcout << L"sending message : " << msg << endl;
+			break;
+		}
+		default:
+			cout << "Message type invalid or not supported." << endl;
+			continue;
 		}
 
-		if (sendMessageToServer(hPipe, msg) == -1) {
+		if (sendMessageToServer(hPipe, msg.c_str()) == -1) {
 			return -1;
 		}
 

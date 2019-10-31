@@ -5,10 +5,21 @@
 
 #include <iostream>
 
+using namespace std;
+
 #define BUFSIZE 512
 
 DWORD WINAPI InstanceThread(LPVOID);
 VOID GetAnswerToRequest(LPTSTR, LPTSTR, LPDWORD);
+
+bool startsWith(std::wstring mainStr, std::wstring toMatch)
+{
+	// std::string::find returns 0 if toMatch is found at starting
+	if (mainStr.find(toMatch) == 0)
+		return true;
+	else
+		return false;
+}
 
 int _tmain(VOID)
 {
@@ -136,7 +147,7 @@ DWORD WINAPI InstanceThread(LPVOID lpvParam)
 	}
 
 	// Print verbose messages. In production code, this should be for debugging only.
-	printf("InstanceThread created, receiving and processing messages.\n");
+	printf("Client connected, receiving and processing messages.\n");
 
 	// The thread's parameter is a handle to a pipe object instance. 
 
@@ -196,17 +207,19 @@ DWORD WINAPI InstanceThread(LPVOID lpvParam)
 	HeapFree(hHeap, 0, pchRequest);
 	HeapFree(hHeap, 0, pchReply);
 
-	printf("InstanceThread exitting.\n");
+	printf("Disconnected from client.\n");
 	return 1;
 }
 
 VOID GetAnswerToRequest(LPTSTR pchRequest,
 	LPTSTR pchReply,
 	LPDWORD pchBytes) {
+
+	wcout << "Rceived: " << pchRequest << endl;
 	
 	if (startsWith(std::wstring(pchRequest), L"str")) {
 		//handle strings/numbers
-		_tprintf(TEXT("Received string/num from client:\"%s\"\n"), &pchRequest[3]);
+		_tprintf(TEXT("Received string/num from client:\"%s\"\n"), &pchRequest[4]);
 	} else if (startsWith(std::wstring(pchRequest), L"cob")) {
 		std::cout << "Received object creation message from client" << std::endl;
 
@@ -221,13 +234,4 @@ VOID GetAnswerToRequest(LPTSTR pchRequest,
 		return;
 	}
 	*pchBytes = (lstrlen(pchReply) + 1) * sizeof(TCHAR);
-}
-
-bool startsWith(std::wstring mainStr, std::wstring toMatch)
-{
-	// std::string::find returns 0 if toMatch is found at starting
-	if (mainStr.find(toMatch) == 0)
-		return true;
-	else
-		return false;
 }
