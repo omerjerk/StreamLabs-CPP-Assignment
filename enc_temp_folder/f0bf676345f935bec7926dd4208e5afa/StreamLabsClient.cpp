@@ -87,8 +87,8 @@ int sendMessageToServer(HANDLE hPipe, LPCTSTR lpvMessage) {
 		return -1;
 	}
 
-	cout << "\n======================================================" << endl;
-	cout<<"Reply from server:\n";
+	cout << "======================================================" << endl;
+	printf("\nMessage sent to server, receiving reply as follows:\n");
 
 	do
 	{
@@ -105,7 +105,7 @@ int sendMessageToServer(HANDLE hPipe, LPCTSTR lpvMessage) {
 		_tprintf(TEXT("\"%s\"\n"), chBuf);
 	} while (!fSuccess);  // repeat loop if ERROR_MORE_DATA 
 
-	cout << "======================================================\n" << endl;
+	cout << "======================================================" << endl;
 
 	if (!fSuccess)
 	{

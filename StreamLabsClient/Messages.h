@@ -10,5 +10,6 @@ class Messages
 {
 public:
 	static wstring getStringMessage(wstring str);
+	static wstring getCreateClassMessage(wstring className);
 };
 

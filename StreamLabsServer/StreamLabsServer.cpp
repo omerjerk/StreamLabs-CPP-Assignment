@@ -4,13 +4,20 @@
 #include <strsafe.h>
 
 #include <iostream>
+#include <unordered_map>
+#include <vector>
+
+#include <json.hpp>
 
 using namespace std;
+using json = nlohmann::json;
 
 #define BUFSIZE 512
 
 DWORD WINAPI InstanceThread(LPVOID);
 VOID GetAnswerToRequest(LPTSTR, LPTSTR, LPDWORD);
+
+static unordered_map<wstring, vector<json>> objects; //map to store classes and their objects
 
 bool startsWith(std::wstring mainStr, std::wstring toMatch)
 {
@@ -211,22 +218,29 @@ DWORD WINAPI InstanceThread(LPVOID lpvParam)
 	return 1;
 }
 
+//main business logic
 VOID GetAnswerToRequest(LPTSTR pchRequest,
 	LPTSTR pchReply,
 	LPDWORD pchBytes) {
-
-	wcout << "Rceived: " << pchRequest << endl;
 	
+	wstring reply = L"default answer from server";
 	if (startsWith(std::wstring(pchRequest), L"str")) {
 		//handle strings/numbers
 		_tprintf(TEXT("Received string/num from client:\"%s\"\n"), &pchRequest[4]);
-	} else if (startsWith(std::wstring(pchRequest), L"cob")) {
-		std::cout << "Received object creation message from client" << std::endl;
-
+	} else if (startsWith(std::wstring(pchRequest), L"ccc")) {
+		wstring className(&pchRequest[4]);
+		std::wcout << "Creating custom class at server named" << className << std::endl;
+		if (objects.find(className) == objects.end()) {
+			objects[className] = vector<json>();
+			reply = L"Class registered at server.";
+		}
+		else {
+			reply = L"Error: Class already registered at server";
+		}
 	}
 
 	// Check the outgoing message to make sure it's not too long for the buffer.
-	if (FAILED(StringCchCopy(pchReply, BUFSIZE, TEXT("default answer from server"))))
+	if (FAILED(StringCchCopy(pchReply, BUFSIZE, reply.c_str())))
 	{
 		*pchBytes = 0;
 		pchReply[0] = 0;

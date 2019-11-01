@@ -5,5 +5,9 @@
 using namespace std;
 
 wstring Messages::getStringMessage(wstring str) {
-	return (L"str " + str).c_str();
+	return (L"str " + str);
+}
+
+wstring Messages::getCreateClassMessage(wstring className) {
+	return (L"ccc " + className);
 }
