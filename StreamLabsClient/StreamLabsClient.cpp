@@ -1,3 +1,5 @@
+#undef _UNICODE
+
 #include <windows.h>
 #include <stdio.h>
 #include <conio.h>
@@ -6,10 +8,8 @@
 #include <iostream>
 
 #include "Messages.h"
-#include <json.hpp>
 
 using namespace std;
-using json = nlohmann::json;
 
 #define BUFSIZE 512
 
@@ -38,7 +38,7 @@ int connectToServer(LPCTSTR lpszPipename, HANDLE &hPipe) {
 
 		if (GetLastError() != ERROR_PIPE_BUSY)
 		{
-			_tprintf(TEXT("Could not open pipe. GLE=%d\n"), GetLastError());
+			printf("Could not open pipe. GLE=%d\n", GetLastError());
 			return -1;
 		}
 
@@ -61,7 +61,7 @@ int connectToServer(LPCTSTR lpszPipename, HANDLE &hPipe) {
 		NULL);    // don't set maximum time 
 	if (!fSuccess)
 	{
-		_tprintf(TEXT("SetNamedPipeHandleState failed. GLE=%d\n"), GetLastError());
+		printf("SetNamedPipeHandleState failed. GLE=%d\n", GetLastError());
 		return -1;
 	}
 }
@@ -72,7 +72,7 @@ int sendMessageToServer(HANDLE hPipe, LPCTSTR lpvMessage) {
 	TCHAR  chBuf[BUFSIZE];
 
 	cbToWrite = (lstrlen(lpvMessage) + 1) * sizeof(TCHAR);
-	_tprintf(TEXT("Sending %d byte message\n"), cbToWrite);
+	printf("Sending %d byte message\n", cbToWrite);
 
 	fSuccess = WriteFile(
 		hPipe,                  // pipe handle 
@@ -83,7 +83,7 @@ int sendMessageToServer(HANDLE hPipe, LPCTSTR lpvMessage) {
 
 	if (!fSuccess)
 	{
-		_tprintf(TEXT("WriteFile to pipe failed. GLE=%d\n"), GetLastError());
+		printf("WriteFile to pipe failed. GLE=%d\n", GetLastError());
 		return -1;
 	}
 
@@ -102,14 +102,14 @@ int sendMessageToServer(HANDLE hPipe, LPCTSTR lpvMessage) {
 
 		if (!fSuccess && GetLastError() != ERROR_MORE_DATA)
 			break;
-		_tprintf(TEXT("\"%s\"\n"), chBuf);
+		printf("\"%s\"\n", chBuf);
 	} while (!fSuccess);  // repeat loop if ERROR_MORE_DATA 
 
 	cout << "======================================================\n" << endl;
 
 	if (!fSuccess)
 	{
-		_tprintf(TEXT("ReadFile from pipe failed. GLE=%d\n"), GetLastError());
+		printf("ReadFile from pipe failed. GLE=%d\n", GetLastError());
 		return -1;
 	}
 }
@@ -153,23 +153,33 @@ int _tmain(int argc, TCHAR * argv[])
 			continue;
 		}
 
-		wstring msg;
+		string msg;
 
 		switch (msgType) {
 		case 0:
 			return 0;
 		case 1: {
-			wstring str;
-			cout << "Enter number/string to send to the server" << endl;
-			wcin >> str;
+			string str;
+			cout << "Enter number/string to send to the server:" << endl;
+			cin >> str;
 			msg = Messages::getStringMessage(str);
 			break;
 		}
 		case 2: {
-			wstring className;
-			cout << "Enter the class name to register at the server" << endl;
-			wcin >> className;
+			string className;
+			cout << "Enter the class name to register at the server:" << endl;
+			cin >> className;
 			msg = Messages::getCreateClassMessage(className);
+			break;
+		}
+		case 3: {
+			string className;
+			string jsonobj;
+			cout << "Enter the name of the class for which to create the objects:" << endl;
+			cin >> className;
+			cout << "Enter object in json format:" << endl;
+			cin >> jsonobj;
+			msg = Messages::getCreateObjMessage(className, jsonobj);
 			break;
 		}
 		default:
@@ -177,7 +187,7 @@ int _tmain(int argc, TCHAR * argv[])
 			continue;
 		}
 
-		if (sendMessageToServer(hPipe, msg.c_str()) == -1) {
+		if (sendMessageToServer(hPipe, (const TCHAR*) msg.c_str()) == -1) {
 			return -1;
 		}
 

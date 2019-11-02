@@ -9,7 +9,8 @@ using namespace std;
 class Messages
 {
 public:
-	static wstring getStringMessage(wstring str);
-	static wstring getCreateClassMessage(wstring className);
+	static string getStringMessage(string str);
+	static string getCreateClassMessage(string className);
+	static string getCreateObjMessage(string className, string jsondata);
 };
 

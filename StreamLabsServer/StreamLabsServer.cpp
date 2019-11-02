@@ -17,9 +17,9 @@ using json = nlohmann::json;
 DWORD WINAPI InstanceThread(LPVOID);
 VOID GetAnswerToRequest(LPTSTR, LPTSTR, LPDWORD);
 
-static unordered_map<wstring, vector<json>> objects; //map to store classes and their objects
+static unordered_map<string, vector<json>> objects; //map to store classes and their objects
 
-bool startsWith(std::wstring mainStr, std::wstring toMatch)
+bool startsWith(std::string mainStr, std::string toMatch)
 {
 	// std::string::find returns 0 if toMatch is found at starting
 	if (mainStr.find(toMatch) == 0)
@@ -107,6 +107,18 @@ int _tmain(VOID)
 	return 0;
 }
 
+string createObj(string jsondata) {
+	json j = json::parse(jsondata);
+	cout << "json - " << j.dump() << endl;
+	string className = j["classname"];
+	if (objects.find(className) == objects.end()) {
+		return "Class not registered with server.";
+	}
+	objects[className].push_back(j["obj"]);
+	cout << "Saving object = " << string(j["obj"]) << " for class " << className << endl;
+	return "Object for class \"" + className + "\" saved on server.";
+}
+
 DWORD WINAPI InstanceThread(LPVOID lpvParam)
 // This routine is a thread processing function to read from and reply to a client
 // via the open pipe connection passed from the main loop. Note this allows
@@ -176,11 +188,11 @@ DWORD WINAPI InstanceThread(LPVOID lpvParam)
 		{
 			if (GetLastError() == ERROR_BROKEN_PIPE)
 			{
-				_tprintf(TEXT("InstanceThread: client disconnected.\n"), GetLastError());
+				printf(TEXT("InstanceThread: client disconnected.\n"));
 			}
 			else
 			{
-				_tprintf(TEXT("InstanceThread ReadFile failed, GLE=%d.\n"), GetLastError());
+				printf(TEXT("InstanceThread ReadFile failed, GLE=%d.\n"), GetLastError());
 			}
 			break;
 		}
@@ -223,20 +235,24 @@ VOID GetAnswerToRequest(LPTSTR pchRequest,
 	LPTSTR pchReply,
 	LPDWORD pchBytes) {
 	
-	wstring reply = L"default answer from server";
-	if (startsWith(std::wstring(pchRequest), L"str")) {
+	string reply = "default answer from server";
+	if (startsWith(std::string(pchRequest), "str")) {
 		//handle strings/numbers
 		_tprintf(TEXT("Received string/num from client:\"%s\"\n"), &pchRequest[4]);
-	} else if (startsWith(std::wstring(pchRequest), L"ccc")) {
-		wstring className(&pchRequest[4]);
-		std::wcout << "Creating custom class at server named" << className << std::endl;
+	} else if (startsWith(std::string(pchRequest), "ccc")) {
+		string className(&pchRequest[4]);
+		std::cout << "Creating custom class at server named - " << className << std::endl;
 		if (objects.find(className) == objects.end()) {
 			objects[className] = vector<json>();
-			reply = L"Class registered at server.";
+			reply = "Class registered at server.";
 		}
 		else {
-			reply = L"Error: Class already registered at server";
+			reply = "Error: Class already registered at server";
 		}
+	}
+	else if (startsWith(std::string(pchRequest), "cob")) {
+		string jsondata(&pchRequest[4]);
+		reply = createObj(jsondata);
 	}
 
 	// Check the outgoing message to make sure it's not too long for the buffer.

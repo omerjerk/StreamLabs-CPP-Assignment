@@ -2,12 +2,23 @@
 
 #include <string>
 
-using namespace std;
+#include <json.hpp>
 
-wstring Messages::getStringMessage(wstring str) {
-	return (L"str " + str);
+using namespace std;
+using json = nlohmann::json;
+
+string Messages::getStringMessage(string str) {
+	return ("str " + str);
 }
 
-wstring Messages::getCreateClassMessage(wstring className) {
-	return (L"ccc " + className);
+string Messages::getCreateClassMessage(string className) {
+	return ("ccc " + className);
+}
+
+string Messages::getCreateObjMessage(string className, string jsondata) {
+	auto data = nlohmann::json::parse(jsondata);
+	json mainobj;
+	mainobj["classname"] = className;
+	mainobj["obj"] = data;
+	return ("cob " + mainobj.dump());
 }
